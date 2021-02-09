@@ -14,14 +14,17 @@ Sysmon Modular - olafhartong
 Incident Response  
 ElasticSearch Course  
   - "Elasticsearch 7 and Elastic Stack - In Depth and Hands On!" by Frank Kane  
+
 Detection (Kerberoasting, Anonymous Logon)  
   - https://github.com/juliourena/hackresponse/blob/main/sigma/rules/win_kerberoasting.yml  
+
 SOF ELK  
 ElastAlert  
 Kafka  
 ETW  
 SilkETW  
   - https://medium.com/threat-hunters-forge/threat-hunting-with-etw-events-and-helk-part-1-installing-silketw-6eb74815e4a0  
+
 packer  
 ansible  
 MISP  
@@ -30,11 +33,13 @@ graylog
 wazuh  
 Javier Polo Cózar: "Implementación de Wazuh en una organización Pública"  
   - http://openaccess.uoc.edu/webapps/o2/bitstream/10609/117787/7/jpcozarTFM0620memoria.pdf#page55  
+
 SCA - Security Configuration Assessment  
 OSQuery  
 fleetctl  
 kolide  
   - https://holdmybeersecurity.com/2021/01/07/getting-started-with-fleetdm-v3-6-0/  
+
 Disable Macros downloaded from internet  
 BlueSpawn EDR  
 SecurityOnion  
