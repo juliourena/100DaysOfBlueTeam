@@ -20,6 +20,7 @@ Things I learned during the journey:
 -	Host Monitoring and Response
 -	Vulnerability Management 
 -	IDS / IPS
+- Threat Intelligence 
 
 Other things of interest: 
 -	Honeypots 
