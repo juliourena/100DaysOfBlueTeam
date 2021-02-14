@@ -55,17 +55,16 @@ I use WSL (Windows Subsystem for Linux) to take advantage of both worlds (Linux 
 - Terraform or Vagrant – Because I use VMWare workstation, I didn’t learn about terraform or vagrant, in the case of vagrant, you need to buy a particular license and terraform was not clear to me when I started doing my automation, so I quit learning about that, but most of the time, you may need to understand terraform or vagrant for a fully automated experience. 
 
 ## Windows Events Collection
-Windows generate some defaults events that can help you with to detect threats, but there are others events you can activate or install.
+Windows generate some defaults events that can help you to detect threats, but there are others events you can activate or install.
 
 You can enable others events from windows configuration and you can also install tools like Sysmon which provides detailed information about process creations, network connections, changes to files, etc.
 
-It is possible to use Windows ETW as demostrated with [SilkELK](https://github.com/fireeye/SilkETW) to collect more information from the host.
+It is also possible to use Windows ETW as demostrated with [SilkELK](https://github.com/fireeye/SilkETW) to collect more information from the host.
 
 There may be other things you want to do, but those are the topics I covered during my journey. 
 
 ### Use Case 
-
-
+You need to hunt for threats within your enviroment or use data for forencis analysis. Windows Events allow you to track actions and changes within a Windows endpoint. You can also use research from other blueteamers if you have the correct logs available on your systems.
 
 ## Host & Network Monitoring
 There are many tools you can use to monitor your workstations and network. I started the journey understanding how the ELK Stack (Elasticsearch, Logstash & Kibana) works, most of the tools out there use this stack and it makes sense to have an idea what it do behind the scene. 
