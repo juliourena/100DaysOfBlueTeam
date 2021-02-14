@@ -15,9 +15,10 @@ After my 100 days, I think I have a better picture on how I would organize my pa
 
 Things I learned during the journey:
 -	Lab Building & Automation 
+-	Host & Network Monitoring
 -	Windows Events Collection 
 -	Network Event Collection 
--	Host Monitoring and Response
+- Threat Hunting
 -	Vulnerability Management 
 -	IDS / IPS
 - Threat Intelligence 
@@ -25,7 +26,7 @@ Things I learned during the journey:
 Other things of interest: 
 -	Honeypots 
 
-## Lab Building 
+## Lab Building & Automation
 If you are planning to learn something you need to do it, you need to see it working and failing, understanding the theory is necessary, but you also need to practice. I spent a lot of days learning automation and it was one of the things I love the most from this journey. 
 
 Before we jump in the recommendation for this section, it’s important for you to know there are many types of labs you can create and with different hardware requirements and hypervisors. 
@@ -44,11 +45,39 @@ Simple Lab Hardware requirements: 16GB – 200 GB HDD/SSD
 -	1 Active Directory Server – 4GB (maybe less)
 -	1 Linux Server with the monitoring tools – 4GB (you can have multiples linux server and start only one when you want to test a specific thing). 
 
-## Use case
+### Use case
 You need to setup your lab, install the OS’s for servers and workstations (Packer), setup active directory as well as join workstations to the AD (Ansible), you also need to install tools on those machines and create some configuration on them (Ansible), for example an agent to report events and traffic to your security operation server. This usually may take a few hours, but if you learn automation, you can setup labs very quickly.
 I use WSL (Windows Subsystem for Linux) to take advantage of both worlds (Linux / Windows), because I didn’t use vagrant or terraform, I used bash scripting to combine all this.  
-## Things to Learn
+### Things to Learn
 - WSL (Windows Subsystem for Linux) – Basically Linux running on your Windows 😊  
 - Packer – Allows you to automate OS Installation. 
 - Ansible – To automate apps and IT infrastructure.
 - Terraform or Vagrant – Because I use VMWare workstation, I didn’t learn about terraform or vagrant, in the case of vagrant, you need to buy a particular license and terraform was not clear to me when I started doing my automation, so I quit learning about that, but most of the time, you may need to understand terraform or vagrant for a fully automated experience. 
+
+## Windows Events Collection
+Windows generate some defaults events that can help you with to detect threats, but there are others events you can activate or install.
+
+You can enable others events from windows configuration and you can also install tools like Sysmon which provides detailed information about process creations, network connections, changes to files, etc.
+
+It is possible to use Windows ETW as demostrated with [SilkELK](https://github.com/fireeye/SilkETW) to collect more information from the host.
+
+There may be other things you want to do, but those are the topics I covered during my journey. 
+
+### Use Case 
+
+
+
+## Host & Network Monitoring
+There are many tools you can use to monitor your workstations and network. I started the journey understanding how the ELK Stack (Elasticsearch, Logstash & Kibana) works, most of the tools out there use this stack and it makes sense to have an idea what it do behind the scene. 
+
+### Use Case
+You need to centralize your events and logs collection, you need your endpoints, servers, applications, switches and firewall to send their logs and events to one location. With all this information you can start building detections and identifying threats within your enviroment. 
+
+### Things To Learn
+I'll mention some tools for you to try them and choose the one that you like the most or the conbination of some of them.
+
+- ELK Stack 
+- Wazuh
+- THE HELK
+- Security Onion
+
