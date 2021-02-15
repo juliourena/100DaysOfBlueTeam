@@ -1,0 +1,12 @@
+- name: Demo
+  hosts: localhost
+  gather_facts: False
+  vars:
+    pwd_alias: "{{ lookup('password', '/dev/null length=30') }}"
+  tasks:
+    - set_fact:
+        my_pass: "{{ pwd_alias }}"
+    - debug:
+        msg: "{{ my_pass }}"
+    - debug:
+        msg: '{{ my_pass | hash("sha256") }}'

@@ -1,0 +1,12 @@
+- hosts: all
+  tasks:
+    - name: Transfer wazuh msi package
+      copy:
+        src: /mnt/c/tools/Automation/ansible/wazuh/wazuh-agent-4.0.3-1.msi
+        dest: C:\wazuh-agent-4.0.3-1.msi
+        
+    - name: Install an MSI file
+      win_package:
+        path: C:\wazuh-agent-4.0.3-1.msi
+        arguments: '/q WAZUH_MANAGER="192.168.56.160" WAZUH_REGISTRATION_SERVER="192.168.56.160"'
+        state: present

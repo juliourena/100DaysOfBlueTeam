@@ -1,0 +1,40 @@
+- hosts: wazuh
+  vars:
+    new_hostname: wazuh
+  become: true
+  tasks:
+    - name: Wait 900 seconds for target connection to become reachable/usable
+      wait_for_connection: 
+        timeout: 900
+    
+    - name: Prerequisites 
+      apt:
+        name: 
+          - curl
+          - net-tools
+        update_cache: yes 
+        state: present
+    
+    - name: Set a hostname
+      hostname:
+        name: {{ new_hostname }}
+      register: "hostname_status"
+    
+    - name: 'Add hostname to /etc/hosts'
+      lineinfile:
+        path: /etc/hosts
+        regexp: '^127\.0\.0\.1[ \t]+localhost'
+        line: '127.0.0.1 localhost {{ new_hostname }}'
+        state: present
+        	
+    - name: Reboot host and wait for it to restart
+      reboot:
+        msg: "Reboot initiated by Ansible"
+        connect_timeout: 5
+        reboot_timeout: 600
+        pre_reboot_delay: 0
+        post_reboot_delay: 30
+        test_command: whoami        
+            
+    - name: Wazuh Unattended Install 
+      shell: curl -so /root/all-in-one-installation.sh https://raw.githubusercontent.com/wazuh/wazuh-documentation/4.0/resources/open-distro/unattended-installation/all-in-one-installation.sh && bash /root/all-in-one-installation.sh

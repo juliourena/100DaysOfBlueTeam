@@ -1,0 +1,44 @@
+- hosts: logstash
+  become: true
+  tasks:
+    - name: Wait 900 seconds for target connection to become reachable/usable
+      wait_for_connection: 
+        timeout: 900
+        
+    - name: Install ElasticSearch 
+      shell: wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add -
+    
+    - name: Install ElasticSearch - transport https 
+      apt:
+        name: apt-transport-https
+        state: present
+    
+    - name: Install ElasticSearch sources 
+      shell: echo "deb https://artifacts.elastic.co/packages/7.x/apt stable main" | sudo tee /etc/apt/sources.list.d/elastic-7.x.list
+      
+    - name: Install logstash
+      apt:
+        name: openjdk-8-jre-headless
+        state: present
+      apt:
+        name: logstash
+        update_cache: yes   
+        state: present
+    
+    - name: Start Logstash Service 
+      systemd:
+        name: logstash
+        state: started
+        daemon_reload: yes
+        enabled: yes
+        
+    - name: Install Net tools
+      apt:
+        name: net-tools
+        state: present
+
+    - name: Generate a Self Signed OpenSSL certificate
+      shell: openssl req -x509 -batch -nodes -newkey rsa:2048 -keyout /etc/logstash/lumberjack.key -out /etc/logstash/lumberjack.cert -subj /CN=logstash.superstore.xyz
+      
+    - name: Install Lumberjack output Plugin
+      shell: /usr/share/logstash/bin/logstash-plugin install --no-verify logstash-output-lumberjack

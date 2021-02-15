@@ -1,0 +1,112 @@
+- hosts: graylog
+  become: true
+  vars:
+    pwd_alias: "{{ lookup('password', '/dev/null length=30') }}"
+  tasks:
+    - name: Wait 900 seconds for target connection to become reachable/usable
+      wait_for_connection: 
+        timeout: 900
+        
+    - name: Install Pre-Requisites
+      apt:
+        pkg: 
+         - apt-transport-https
+         - openjdk-8-jre-headless
+         - uuid-runtime
+         - pwgen
+         - curl
+         - dirmngr
+         - net-tools
+         
+    - name: Install ElasticSearch 
+      shell: wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add -
+    
+    - name: Install ElasticSearch - transport https 
+      apt:
+        name: apt-transport-https
+        state: present
+    
+    - name: Install ElasticSearch sources 
+      shell: echo "deb https://artifacts.elastic.co/packages/7.x/apt stable main" | sudo tee /etc/apt/sources.list.d/elastic-7.x.list
+    
+    - name: Install ElasticSearch    
+      apt:
+        name: elasticsearch
+        update_cache: yes 
+        state: present
+        
+    - name: Set the cluster name shown graylog.
+      lineinfile:
+        path: /etc/elasticsearch/elasticsearch.yml
+        insertafter: '^#cluster.name: '
+        line: 'cluster.name: graylog'
+        
+    #- name: Set the network.host to 0.0.0.0.
+    #  lineinfile:
+    #    path: /etc/elasticsearch/elasticsearch.yml
+    #    insertafter: '^#network.host: '
+    #    line: 'network.host: 0.0.0.0'	
+        
+    - name: Start Elasticsearch Service
+      systemd:
+        name: elasticsearch
+        state: started
+        daemon_reload: yes
+        enabled: yes
+
+    - name: Add an apt key by id from a keyserver for MongoDB Installation
+      apt_key:
+        keyserver: keyserver.ubuntu.com
+        id: 9DA31620334BD75D9DCB49F368818C72E52529D4
+
+    - name: Install MongoDB sources 
+      shell: echo "deb [ arch=amd64 ] https://repo.mongodb.org/apt/ubuntu bionic/mongodb-org/4.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.0.list
+
+    - name: Install MongoDB    
+      apt:
+        name: mongodb-org
+        update_cache: yes 
+        state: present
+
+    - name: Start mongod Service
+      systemd:
+        name: mongod
+        state: started
+        daemon_reload: yes
+        enabled: yes
+        
+    - name: Download graylog deb package 
+      apt:
+        deb: https://packages.graylog2.org/repo/packages/graylog-4.0-repository_latest.deb
+
+    - name: Install graylog    
+      apt:
+        name: graylog-server
+        update_cache: yes 
+        state: present
+
+    - name: Start graylog Service
+      systemd:
+        name: graylog-server
+        state: started
+        daemon_reload: yes
+        enabled: yes
+    
+    - set_fact:
+        my_pass: "{{ pwd_alias }}"
+    
+    - name: Create a random password 
+      lineinfile:
+        path: /etc/graylog/server/server.conf
+        regexp: '{{item.From}}'
+        line: '{{item.To}}'
+        state: present
+      with_items:
+        - { From: 'password_secret =', To: 'password_secret = {{ my_pass }}' }
+        - { From: 'root_password_sha2 =', To: 'root_password_sha2 = {{ my_pass | hash("sha256") }}' }
+        - { From: '#http_bind_address = 127.0.0.1:9000', To: 'http_bind_address = 0.0.0.0:9000' }
+    
+    - name: Restart graylog Service
+      systemd:
+        name: graylog-server
+        state: restarted

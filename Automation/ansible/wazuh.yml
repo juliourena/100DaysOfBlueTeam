@@ -1,0 +1,220 @@
+- hosts: wazuh
+  become: true
+  tasks:
+    - name: Wait 900 seconds for target connection to become reachable/usable
+      wait_for_connection: 
+        timeout: 900
+    - name: Install  GPG key Wazuh
+      shell: wget -qO - https://packages.wazuh.com/key/GPG-KEY-WAZUH  | sudo apt-key add -
+    
+    - name: Prerequisites 
+      apt:
+        name: 
+          - apt-transport-https
+          - curl
+          - lsb-release
+          - unzip
+          - wget
+          - libcap2-bin
+          - software-properties-common
+          - gnupg2
+          - net-tools
+        update_cache: yes 
+        state: present
+    
+    - name: Add the repository for Java Development Kit (JDK)
+      apt_repository:
+        repo: 'ppa:openjdk-r/ppa'
+        
+    - name: Set JAVA_HOME
+      lineinfile:
+        dest: /etc/environment
+        state: present
+        regexp: '^JAVA_HOME'
+        line: 'JAVA_HOME=/usr/'
+        
+    - name: Install all the required utilities
+      apt:
+        name: openjdk-11-jdk
+    
+    - name: Adding the Wazuh repository
+      shell: echo "deb https://packages.wazuh.com/4.x/apt/ stable main" | tee -a /etc/apt/sources.list.d/wazuh.list 
+      
+    - name: Install Wazuh Manager    
+      apt:
+        name: wazuh-manager
+        update_cache: yes 
+        state: present
+        
+    - name: Start wazuh-manager Service
+      systemd:
+        name: wazuh-manager
+        state: started
+        daemon_reload: yes
+        enabled: yes
+        
+    # Install Elasticsearch
+    - name: Installing Elasticsearch 
+      apt:
+        name: 
+          - elasticsearch-oss
+          - opendistroforelasticsearch
+        update_cache: yes 
+        state: present    
+            
+    - name: Configuring Elasticsearch
+      shell: curl -so /etc/elasticsearch/elasticsearch.yml https://raw.githubusercontent.com/wazuh/wazuh-documentation/4.0/resources/open-distro/elasticsearch/7.x/elasticsearch_all_in_one.yml
+    
+    - name: Elasticsearch roles and users
+      shell: |
+        curl -so /usr/share/elasticsearch/plugins/opendistro_security/securityconfig/roles.yml https://raw.githubusercontent.com/wazuh/wazuh-documentation/4.0/resources/open-distro/elasticsearch/roles/roles.yml
+        curl -so /usr/share/elasticsearch/plugins/opendistro_security/securityconfig/roles_mapping.yml https://raw.githubusercontent.com/wazuh/wazuh-documentation/4.0/resources/open-distro/elasticsearch/roles/roles_mapping.yml
+        curl -so /usr/share/elasticsearch/plugins/opendistro_security/securityconfig/internal_users.yml https://raw.githubusercontent.com/wazuh/wazuh-documentation/4.0/resources/open-distro/elasticsearch/roles/internal_users.yml
+    
+    - name: Certificates creation
+      shell: rm /etc/elasticsearch/esnode-key.pem /etc/elasticsearch/esnode.pem /etc/elasticsearch/kirk-key.pem /etc/elasticsearch/kirk.pem /etc/elasticsearch/root-ca.pem -f
+    
+    - name: Move to the installation location and create the certificates directory
+      file:
+        path: /etc/elasticsearch/certs
+        state: directory
+    
+    - name: Download the pre-configured Filebeat configuration file used to forward the Wazuh alerts to Elasticsearch
+      get_url:
+        url: https://maven.search-guard.com/search-guard-tlstool/1.8/search-guard-tlstool-1.8.zip
+        dest: /tmp/search-guard-tlstool-1.8.zip 
+    
+    - name: Create /tmp/searchguard directory
+      file:
+        path: /tmp/searchguard
+        state: directory
+    
+    - name: Extract the downloaded file. It is assumed that it has been downloaded in /tmp/ (home directory)
+      unarchive:
+        src: /tmp/search-guard-tlstool-1.8.zip
+        dest: /tmp/searchguard
+        remote_src: yes
+        
+    - name: Download the search-guard.yml configuration file. This file is pre-configured to generate all the necessary certificates
+      get_url:
+        url: https://raw.githubusercontent.com/wazuh/wazuh-documentation/4.0/resources/open-distro/searchguard/search-guard-aio.yml
+        dest: /tmp/searchguard/search-guard.yml     
+    
+    - name: Run the Search Guard’s script to create the certificates
+      shell: /tmp/searchguard/tools/sgtlstool.sh -c /tmp/searchguard/search-guard.yml -ca -crt -t /etc/elasticsearch/certs/  
+    
+    - name: Run the Search Guard’s script to create the certificates
+      shell: rm /etc/elasticsearch/certs/client-certificates.readme /etc/elasticsearch/certs/elasticsearch_elasticsearch_config_snippet.yml /tmp/search-guard-tlstool-1.8.zip /tmp/searchguard -rf 
+
+    - name: Enable and start the Elasticsearch service
+      systemd:
+        name: elasticsearch
+        state: started
+        daemon_reload: yes
+        enabled: yes
+    
+    - name: Run the Elasticsearch’s securityadmin script to load the new certificates information and start the cluster
+      shell: /usr/share/elasticsearch/plugins/opendistro_security/tools/securityadmin.sh -cd /usr/share/elasticsearch/plugins/opendistro_security/securityconfig/ -nhnv -cacert /etc/elasticsearch/certs/root-ca.pem -cert /etc/elasticsearch/certs/admin.pem -key /etc/elasticsearch/certs/admin.key
+
+    # Install FileBeats
+    - name: Installing Filebeat
+      apt:
+        name: filebeat
+        state: present
+           
+    - name: Download the pre-configured Filebeat configuration file used to forward the Wazuh alerts to Elasticsearch
+      get_url:
+        url: https://raw.githubusercontent.com/wazuh/wazuh-documentation/4.0/resources/open-distro/filebeat/7.x/filebeat_all_in_one.yml
+        dest: /etc/filebeat/filebeat.yml
+        mode: '0440'
+
+    - name: Download the Wazuh module for Filebeat
+      get_url:
+        url: https://packages.wazuh.com/4.x/filebeat/wazuh-filebeat-0.1.tar.gz
+        dest: /tmp/wazuh-filebeat-0.1.tar.gz 
+        
+    - name: Create /usr/share/filebeat/module directory
+      file:
+        path: /usr/share/filebeat/module
+        state: directory
+        
+    - name: Extract the downloaded file. It is assumed that it has been downloaded in /tmp/ (home directory)
+      unarchive:
+        src: /tmp/wazuh-filebeat-0.1.tar.gz 
+        dest: /usr/share/filebeat/module
+        remote_src: yes
+
+    - name: Create the directory /etc/filebeat/certs
+      file:
+        path: /etc/filebeat/certs
+        state: directory
+
+    - name: Copy the Elasticsearch certificates into /etc/filebeat/certs
+      copy:
+        src: /etc/elasticsearch/certs/root-ca.pem
+        dest: /etc/filebeat/certs/root-ca.pem
+        remote_src: yes
+
+    - name: Move the Elasticsearch certificates into /etc/filebeat/certs
+      shell: mv /etc/elasticsearch/certs/filebeat* /etc/filebeat/certs/
+
+    - name: Enable and start the filebeat service
+      systemd:
+        name: filebeat
+        state: started
+        daemon_reload: yes
+        enabled: yes
+
+    # Installing Kibana
+    - name: Installing Kibana
+      apt:
+        name: opendistroforelasticsearch-kibana
+        state: present
+
+    - name: Download the Kibana configuration file
+      get_url:
+        url: https://raw.githubusercontent.com/wazuh/wazuh-documentation/4.0/resources/open-distro/kibana/7.x/kibana_all_in_one.yml
+        dest: /etc/kibana/kibana.yml
+
+    - name: Update the optimize and plugins directories permissions
+      file: 
+        path: /usr/share/kibana/optimize
+        owner: kibana
+        group: kibana
+
+    - name: Update the optimize and plugins directories permissions
+      file: 
+        path: /usr/share/kibana/plugins
+        owner: kibana
+        group: kibana
+        
+    - name: Install the Wazuh Kibana plugin. The installation of the plugin must be done from the Kibana home directory 
+      shell: sudo -u kibana /usr/share/kibana/bin/kibana-plugin install https://packages.wazuh.com/4.x/ui/kibana/wazuh_kibana-4.0.3_7.9.1-1.zip
+      args:
+        chdir: /usr/share/kibana
+
+    - name: Copy the Elasticsearch certificates into /etc/kibana/certs
+      file:
+        path: /etc/kibana/certs
+        state: directory
+
+    - name: Copy the Elasticsearch certificates into /etc/kibana/certs
+      copy:
+        src: /etc/elasticsearch/certs/root-ca.pem
+        dest: /etc/kibana/certs/root-ca.pem
+        remote_src: yes
+
+    - name: Copy the Elasticsearch certificates into /etc/filebeat/certs
+      shell: |
+        mv /etc/elasticsearch/certs/kibana_http.key /etc/kibana/certs/kibana.key
+        mv /etc/elasticsearch/certs/kibana_http.pem /etc/kibana/certs/kibana.pem
+
+    - name: Link Kibana's socket to privileged port 443
+      shell: setcap 'cap_net_bind_service=+ep' /usr/share/kibana/node/bin/node
+    
+    - name: Start kibana Service
+      systemd:
+        name: kibana
+        state: started
+        daemon_reload: yes
+        enabled: yes

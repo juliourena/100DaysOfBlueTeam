@@ -1,0 +1,91 @@
+- name: Monitor Domain Controller
+  hosts: dc
+  vars:
+    sysmon_download_url_base: "https://download.sysinternals.com/files"
+    sysmon_install_location: "c:\\windows\\sysmon"
+    sysmon_download_file: "Sysmon" 
+    file_ext: ".zip"
+    sysmon_config_url: "https://raw.githubusercontent.com/SwiftOnSecurity/sysmon-config/master/sysmonconfig-export.xml"
+    winlogbeat_download_url_base: "https://artifacts.elastic.co/downloads/beats/winlogbeat/winlogbeat-7.10.0-windows-x86_64.zip"
+    winlogbeat_install_location: "c:\\windows\\winlogbeat"
+    winlogbeat_download_file: "winlogbeat" 
+    winlogbeat_config: "C:\\Windows\\winlogbeat\\winlogbeat.yml"
+    winlogbeat_config_src: "/mnt/c/tools/Automation/ansible/winlogbeat.yml"
+    temp_location: "C:\\Windows\\Temp"
+  gather_facts: no
+  tasks:
+    # https://github.com/NVISO-BE/ansible-sysmon
+    # For later would be better to do this on the server and just copy the files. 
+    - name: '[Install Sysmon] - Get sysmon zip'
+      win_get_url:
+        url: "{{ sysmon_download_url_base }}/{{ sysmon_download_file }}{{ file_ext }}"
+        dest: "{{ temp_location }}/{{ sysmon_download_file }}{{ file_ext }}"
+
+    - name: '[Install Sysmon] - Unzip sysmon' 
+      win_unzip:
+        src: "{{ temp_location }}/{{ sysmon_download_file }}{{ file_ext }}"
+        dest: "{{ sysmon_install_location }}"
+
+    - name: '[Install Sysmon] Copy sysmon config'
+      win_get_url:
+        url: "{{ sysmon_config_url }}"
+        dest: c:\windows\sysmon\sysmonconfig-export.xml
+
+    - name: '[Install Sysmon] - Check sysmon service'
+      win_service:
+        name: sysmon64
+      register: result
+      failed_when: result is not defined
+      ignore_errors: yes
+
+    - name: '[Install Sysmon] - Run sysmon'
+      win_command: "{{ sysmon_install_location }}\\sysmon64.exe -accepteula -i {{ sysmon_install_location }}\\sysmonconfig-export.xml"
+      args:
+        chdir: "{{ sysmon_install_location }}"
+      when: result.state is not defined or result.name is not defined 
+    
+    - name: '[Install Winlogbeat] - Get Winlogbeat zip'
+      win_get_url:
+        url: "{{ winlogbeat_download_url_base }}"
+        dest: "{{ temp_location }}/{{ winlogbeat_download_file }}{{ file_ext }}"
+
+    - name: '[Install Winlogbeat] - Unzip winlogbeat'
+      win_unzip:
+        src: "{{ temp_location }}/{{ winlogbeat_download_file }}{{ file_ext }}"
+        dest: "{{ winlogbeat_install_location }}"
+        creates: yes
+        delete_archive: yes
+        
+    - name: '[Install Winlogbeat] - Move files to permanent directory'
+      win_shell: cd c:\windows\winlogbeat\winlogbeat*;move * {{ winlogbeat_install_location }}
+      ignore_errors: yes
+      
+    - name: '[Install Winlogbeat] - Copy winlogbeat config'
+      win_copy:
+        src: "{{ winlogbeat_config_src }}"
+        dest: "{{ winlogbeat_config }}"
+
+    - name: '[Install Winlogbeat] - Check winlogbeat service'
+      win_service:
+        name: winlogbeat
+      register: result
+      failed_when: result is not defined
+      ignore_errors: yes
+
+    - name: '[Install Winlogbeat] - Run winlogbeat'
+      win_shell: 'powershell -exec bypass -nop -file "{{ winlogbeat_install_location }}\\install-service-winlogbeat.ps1" >> c:\windows\winlogbeat\winlogbeat-install-logs.txt'
+      when: result.state is not defined
+      
+    - name: '[Install Winlogbeat] - Check winlogbeat service'
+      win_service:
+        name: winlogbeat
+        state: started
+     
+    - name: 'Check Service Status Before Installing'
+      win_service:
+        name: SilkETW
+      register: result
+    
+    - name: 'Install ETW Monitor (SilkETW Service)'
+      win_shell: "IEX(New-Object Net.WebClient).DownloadString('https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/endpoint-software/Install-SilkETW.ps1')"
+      when: result.state is not defined

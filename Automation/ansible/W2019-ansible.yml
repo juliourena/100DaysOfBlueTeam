@@ -1,0 +1,52 @@
+- hosts: dc
+  vars:
+    dc_ip: "192.168.56.10"
+  gather_facts: no
+  tasks:
+    - name: Wait 900 seconds for Windows Server 2009 connection to become reachable/usable
+      wait_for_connection: 
+        timeout: 900
+    - win_chocolatey: 
+        name: vmware-tools
+        state: present
+    
+    - name: Set up static IP address
+      win_shell: "Get-NetIpAddress -InterfaceAlias 'Ethernet*' | New-NetIpAddress -IpAddress 192.168.56.10 -PrefixLength 24 -DefaultGateway 192.168.56.2"
+      async: 100 # Using "fire-and-forget" asynchronous execution for this task, otherwise it will always fail and timeout
+      poll: 0
+
+    - name: Change ansible's ip address for each host
+      set_fact:
+        ansible_host: "{{ dc_ip }}"
+    
+    - name: Sleep for 5 seconds and continue with play
+      wait_for:
+        timeout: 5
+      delegate_to: localhost
+
+    - name: Wait for the hosts network interface to come back up
+      wait_for:
+        host: "{{ dc_ip }}"
+        port: 5986
+        delay: 10
+    
+    # Change the hostname to DC-01
+    - win_hostname:
+        name: DC-01
+      register: res
+      
+    # Reboot
+    - win_reboot:
+      when: res.reboot_required
+      
+    # DC Promo
+    - win_domain:
+        dns_domain_name: superstore.xyz
+        safe_mode_password: "SuperSecretPa$$w0rd"
+
+    # Add user to the domain
+    - win_domain_user:
+        name: "Julio Ureña"
+        upn: juurena@superstore.xyz
+        groups:
+        - Domain Admins

@@ -1,0 +1,116 @@
+- hosts: wazuhManager
+  vars:
+    elastic_server_ip: '192.168.56.190'
+  become: true
+  tasks:
+    - name: Wait 900 seconds for target connection to become reachable/usable
+      wait_for_connection: 
+        timeout: 900
+    - name: Install  GPG key Wazuh
+      shell: wget -qO - https://packages.wazuh.com/key/GPG-KEY-WAZUH  | sudo apt-key add -
+    
+    - name: Prerequisites 
+      apt:
+        name: 
+          - apt-transport-https
+          - curl
+          - lsb-release
+          - unzip
+          - wget
+          - libcap2-bin
+          - software-properties-common
+          - gnupg2
+          - net-tools
+        update_cache: yes 
+        state: present
+    
+    - name: Add the repository for Java Development Kit (JDK)
+      apt_repository:
+        repo: 'ppa:openjdk-r/ppa'
+        
+    - name: Set JAVA_HOME
+      lineinfile:
+        dest: /etc/environment
+        state: present
+        regexp: '^JAVA_HOME'
+        line: 'JAVA_HOME=/usr/'
+        
+    - name: Install all the required utilities
+      apt:
+        name: openjdk-11-jdk
+    
+    - name: Adding the Wazuh repository
+      shell: echo "deb https://packages.wazuh.com/4.x/apt/ stable main" | tee -a /etc/apt/sources.list.d/wazuh.list 
+      
+    - name: Install Wazuh Manager    
+      apt:
+        name: wazuh-manager
+        update_cache: yes 
+        state: present
+        
+    - name: Start wazuh-manager Service
+      systemd:
+        name: wazuh-manager
+        state: started
+        daemon_reload: yes
+        enabled: yes
+        
+    - name: Change agent registration to use passwords
+      replace: 
+        path: /var/ossec/etc/ossec.conf
+        regexp: '<use_password>no<\/use_password>' 
+        replace: '<use_password>yes</use_password>'
+        
+    - name: Define password to use 
+      copy:
+        dest: /var/ossec/etc/authd.pass
+        content: Password123!
+        
+    - name: Restart wazuh-manager Service
+      systemd:
+        name: wazuh-manager
+        state: restarted
+    
+    # Install FileBeats
+    - name: Installing Filebeat
+      apt:
+        name: filebeat=7.9.1
+        state: present
+           
+    - name: Download the Filebeat configuration file from the Wazuh repository. This is pre-configured to forward Wazuh alerts to Elasticsearch
+      get_url:
+        url: https://raw.githubusercontent.com/wazuh/wazuh/v4.0.3/extensions/filebeat/7.x/filebeat.yml
+        dest: /etc/filebeat/filebeat.yml
+        mode: '0440'
+    
+    - name: Download the alerts template for Elasticsearch
+      get_url:
+        url: https://raw.githubusercontent.com/wazuh/wazuh/v4.0.3/extensions/elasticsearch/7.x/wazuh-template.json
+        dest: /etc/filebeat/wazuh-template.json
+        mode: '0440'
+    
+    - name: Download the Wazuh module for Filebeat
+      get_url:
+        url: https://packages.wazuh.com/4.x/filebeat/wazuh-filebeat-0.1.tar.gz
+        dest: /tmp/wazuh-filebeat-0.1.tar.gz 
+        
+    - name: Create /usr/share/filebeat/module directory
+      file:
+        path: /usr/share/filebeat/module
+        state: directory
+        
+    - name: Extract the downloaded file. It is assumed that it has been downloaded in /tmp/ (home directory)
+      unarchive:
+        src: /tmp/wazuh-filebeat-0.1.tar.gz 
+        dest: /usr/share/filebeat/module
+        remote_src: yes
+
+    - name: Enable and start the filebeat service
+      systemd:
+        name: filebeat
+        state: started
+        daemon_reload: yes
+        enabled: yes
+        
+    
+    

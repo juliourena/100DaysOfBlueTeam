@@ -1,0 +1,116 @@
+- hosts: wazuhElastic
+  vars:
+    wazuhManagerIP: '192.168.56.165'
+  become: true
+  tasks:
+    - name: Wait 900 seconds for target connection to become reachable/usable
+      wait_for_connection: 
+        timeout: 900
+    - name: Install ElasticSearch 
+      shell: wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add -
+    
+    - name: Install ElasticSearch - transport https 
+      apt:
+        name: apt-transport-https
+        state: present
+    
+    - name: Install ElasticSearch sources 
+      shell: echo "deb https://artifacts.elastic.co/packages/7.x/apt stable main" | sudo tee /etc/apt/sources.list.d/elastic-7.x.list
+    
+    # Install ElasticSearch
+    - name: Install ElasticSearch    
+      apt:
+        name: elasticsearch=7.9.3
+        update_cache: yes 
+        state: present
+        
+    - name: Start Elasticsearch Service
+      systemd:
+        name: elasticsearch
+        state: started
+        daemon_reload: yes
+        enabled: yes
+        
+    - name: Optimize Elasticsearch for lab use (Memory locking)
+      lineinfile:
+        path: /etc/elasticsearch/elasticsearch.yml
+        insertafter: '^#bootstrap.memory_lock: '
+        line: 'bootstrap.memory_lock: true'
+       
+    - name: Create /etc/systemd/system/elasticsearch.service.d/ directory
+      file:
+        path: /etc/systemd/system/elasticsearch.service.d
+        state: directory
+        
+    - name: Limit Memory - 1
+      copy:
+        dest: /etc/systemd/system/elasticsearch.service.d/elasticsearch.conf
+        content: |
+            [Service]
+            LimitMEMLOCK=infinity
+            
+
+    - name: Limit Memory - 2
+      lineinfile:
+        path: /etc/elasticsearch/jvm.options
+        regexp: '{{item.From}}'
+        line: '{{item.To}}'
+        state: present
+      with_items:
+         - { From: '^-Xms1g', To: '-Xms4g'}
+         - { From: '^-Xmx1g', To: '-Xmx4g'}
+         
+    - name: Restart elasticsearch Service
+      systemd:
+        name: elasticsearch
+        state: restarted
+        daemon_reload: yes
+        
+    # Install Kibana
+    
+    - name: Install Kibana
+      apt:
+        name: kibana
+        state: present
+        
+    - name: Install the Wazuh Kibana plugin. The installation of the plugin must be done from the Kibana home directory 
+      shell: bin/kibana-plugin install https://packages.wazuh.com/4.x/ui/kibana/wazuh_kibana-4.0.3_7.9.1-1.zip
+      args:
+        chdir: /usr/share/kibana
+      become: true
+      become_user: kibana
+      
+    - name: Change Kibana Server configuration file
+      lineinfile:
+        path: /etc/kibana/kibana.yml
+        regexp: '{{item.From}}'
+        line: '{{item.To}}'
+        state: present
+      with_items:
+         - { From: '^#server.host: ', To: 'server.host: 0.0.0.0'}
+         - { From: '^#server.port: ', To: 'server.port: 443'}
+         
+    - name: Set CAP_NET_BIND_SERVICE=+eip for kibana
+      shell: setcap 'CAP_NET_BIND_SERVICE=+eip' /usr/share/kibana/node/bin/node
+      
+    - name: Install the Wazuh Kibana plugin. The installation of the plugin must be done from the Kibana home directory 
+      shell: NODE_OPTIONS="--max-old-space-size=4096" /usr/share/kibana/bin/kibana --optimize --allow-root
+      args:
+        chdir: /usr/share/kibana/
+        
+    - name: Configure the credentials to access the Wazuh API
+      copy:
+        dest: /usr/share/kibana/optimize/wazuh/config/wazuh.yml
+        content: |
+            - wazuhapi:
+                url: https://'{{wazuhManagerIP}}'
+                port: 55000
+                username: wazuhapiuser
+                password: wazuhlab
+               
+
+    - name: Restart Kibana Service
+      systemd:
+        name: kibana
+        state: restarted
+        daemon_reload: yes
