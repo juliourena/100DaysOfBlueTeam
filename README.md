@@ -45,10 +45,10 @@ Simple Lab Hardware requirements: 16GB – 200 GB HDD/SSD
 You need to setup your lab, install the OS’s for servers and workstations (Packer), setup active directory as well as join workstations to the AD (Ansible), you also need to install tools on those machines and create some configuration on them (Ansible), for example an agent to report events and traffic to your security operation server. This usually may take a few hours, but if you learn automation, you can setup labs very quickly.
 I use WSL (Windows Subsystem for Linux) to take advantage of both worlds (Linux / Windows), because I didn’t use vagrant or terraform, I used bash scripting to combine all this.  
 ### Things to Learn
-- WSL (Windows Subsystem for Linux) – Basically Linux running on your Windows 😊  
-- Packer – Allows you to automate OS Installation. 
-- Ansible – To automate apps and IT infrastructure.
-- Terraform or Vagrant – Because I use VMWare workstation, I didn’t learn about terraform or vagrant, in the case of vagrant, you need to buy a particular license and terraform was not clear to me when I started doing my automation, so I quit learning about that, but most of the time, you may need to understand terraform or vagrant for a fully automated experience. 
+- [WSL (Windows Subsystem for Linux)](https://docs.microsoft.com/en-us/windows/wsl/install-win10) – Basically Linux running on your Windows 😊  
+- [Packer](https://www.packer.io/) – Allows you to automate OS Installation. 
+- [Ansible](https://www.ansible.com/) – To automate apps and IT infrastructure.
+- [Terraform](https://www.terraform.io/) or [Vagrant](https://www.vagrantup.com/) – Because I use VMWare workstation, I didn’t learn about terraform or vagrant, in the case of vagrant, you need to buy a particular license and terraform was not clear to me when I started doing my automation, so I quit learning about that, but most of the time, you may need to understand terraform or vagrant for a fully automated experience. 
 
 ## Windows Events Collection
 Windows generate some defaults events that can help you to detect threats, but there are others events you can activate or install.
@@ -63,8 +63,8 @@ There may be other things you want to do, but those are the topics I covered dur
 You need to hunt for threats within your enviroment or use data for forencis analysis. Windows Events allow you to track actions and changes within a Windows endpoint. You can also use research from other blueteamers if you have the correct logs available on your systems.
 
 ### Things to Learn
-- Windows Events
-- Sysmon
+- [Windows Events](https://docs.microsoft.com/en-us/windows/win32/events/windows-events)
+- [Sysmon](https://docs.microsoft.com/en-us/sysinternals/downloads/sysmon)
 
 ## Host & Network Monitoring
 Before we can do threat hunting we need to collect information from different sources and centralize that information in one place. There are many tools you can use to monitor your workstations and network. I started the journey understanding how the ELK Stack (Elasticsearch, Logstash & Kibana) works, most of the tools out there use this stack and it makes sense to have an idea what it do behind the scene. 
@@ -78,26 +78,26 @@ There's an incident on your enviroment and there are some host that you suspect 
 I'll mention some tools for you to try them and choose the one that you like the most or the conbination of some of them.
 
 #### Events & Logs Collection
-- Winlogbeats
-- Filebeats
+- [Winlogbeat](https://www.elastic.co/beats/winlogbeat)
+- [Filebeats](https://www.elastic.co/beats/filebeat)
 - Syslogs
 
 #### Network monitoring / IDS
-- Zeek 
-- Snort
-- Suricata IDS
+- [Zeek](https://zeek.org/)
+- [Snort](https://www.snort.org/)
+- [Suricata IDS](https://suricata-ids.org/)
 
 #### Centralize Management
 - ELK Stack (ElasticSearch, Kibana, Logstash)
-- Wazuh
-- THE HELK
-- Security Onion
+- [Wazuh](https://wazuh.com/)
+- [THE HELK](https://github.com/Cyb3rWard0g/HELK)
+- [Security Onion](https://securityonionsolutions.com/)
 
 ### OS Realtime query
 Query your devices like a database.
-- Osquery
-- Kolide
-- Fleet
+- [Osquery](https://osquery.io/)
+- [Kolide](https://www.kolide.com/)
+- [Fleet](https://github.com/kolide/fleet)
 
 ## Threat Hunting
 Once with all data being collected in one location we can start doing our threat hunting. There are many methods we can use but we'll focus on some methods being develop by the BlueTeam Community. Will focus on Snort for network traffic, YARA for files and Sigma for logs. Those project aims to have generic rules which can be shared and run against different targets.
@@ -106,24 +106,28 @@ Once with all data being collected in one location we can start doing our threat
 A new threat came and you want to understand if you are vulernable or compromise, the community release a new sigma rule to detect that threat and you run it again your collected data. 
 
 ### Things to Learn
-- YARA
-- Sigma
-- Snort
-- LogonTracer
-- PlumHound
-- ivre
+- [YARA](https://github.com/Yara-Rules/rules)
+- [Sigma](https://github.com/Neo23x0/sigma)
+- [Snort](https://www.snort.org/)
+- [LogonTracer](https://github.com/JPCERTCC/LogonTracer)
+- [PlumHound](https://github.com/PlumHound/PlumHound)
+- [ivre](https://github.com/cea-sec/ivre)
 
 ## Vulnerability Management
+In order to identify vulnerability on endpoints or services you can use a Vulnerability Management solution.
 
 ### Use Case
+You have multiples endpoints and services on you enviroment, you need to make sure they are not vulnerable to public exploits or common vulnerabilities, you can scan those endpoints and services to identify those vulnerability and create an action plan to fix it. 
 
 ### Things to Learn
-- Wazuh
+- [Wazuh](https://wazuh.com/)
 
 ## Threat Intelligence
-
+A threat intelligence platform for gathering, sharing, storing and correlating Indicators of Compromise of targeted attacks, threat intelligence, financial fraud information, vulnerability information or even counter-terrorism information. (MIPS definition) 
+ 
 ### Use Case
+I didn't fully implement MIPS or OpenCTI, but can be a really good thing to learn. 
 
 ### Things to Learn
-- MIPS
-- OpenCTI
+- [MIPS](https://www.misp-project.org/)
+- [OpenCTI](https://www.opencti.io/en/)
