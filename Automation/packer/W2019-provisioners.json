@@ -1,0 +1,54 @@
+{
+	"builders": [
+	  {
+		"type": "vmware-iso",
+		"name": "WS2019_Automation",
+		"communicator": "winrm",
+		"winrm_username": "Automation",
+		"winrm_password": "Welcome1",
+		"winrm_timeout": "4h",
+		"winrm_use_ssl": true,
+		"winrm_insecure": true,
+		"disable_vnc": true,
+		"iso_url": "en_windows_server_2019_updated_oct_2020_x64_dvd_7484fc77.iso",
+		"iso_checksum": "md5:0061c5f6b9b0b2fc468b9701dad9cbbf",
+		"boot_wait": "2m",
+		"shutdown_command": "shutdown /s /t 10 /f /d p:4:1 /c \"Packer Shutdown\"",
+		"vm_name": "WS2019_Automation",
+		"guest_os_type": "windows8srv-64",
+		"version": 16,
+		"disk_size": 61440,
+		"vmdk_name": "WS2019_Automation",
+		"vmx_data": {
+		  "numvcpus": 4,
+		  "memsize": 4096,
+		  "scsi0.virtualDev": "lsisas1068"
+		},
+		"floppy_files": [
+			"./WS2019/Autounattend.xml",
+			"./scripts/ConfigureRemotingForAnsible.ps1",
+			"./scripts/Set-NetworkPrivate.ps1"
+		]
+	  }
+	],
+	"provisioners": [
+		{
+			"type": "file",
+			"source": "./scripts/ip.cmd",
+			"destination": "C:/ip.cmd"
+		},
+		{
+			"type": "windows-shell",
+			"inline": [
+				"echo [{{ user `ansible_group` }}] > C:/hosts",
+				"C:/ip.cmd"
+			]
+		},
+		{
+			"type": "file",
+			"direction": "download",
+			"source": "C:/hosts",
+			"destination": "./ansible/hosts-{{ user `ansible_group` }}"
+		}
+	]
+}

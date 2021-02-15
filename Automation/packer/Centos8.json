@@ -1,0 +1,75 @@
+{
+	"variables": {
+        "ansible_group": "CentOS",
+		"cpus": "4",
+        "disable_ipv6": "true",
+        "disk_size": "100000",
+        "headless": "false",
+        "hostname": "CentOS",
+        "iso_checksum": "md5:40cadc677c5b5821473d852671d03d6e",
+        "iso_name": "CentOS-8.3.2011-x86_64-boot.iso",
+        "iso_path": "iso",
+        "iso_url": "CentOS-8.3.2011-x86_64-boot.iso",
+        "memory": "8192",
+        "ssh_fullname": "packer",
+        "ssh_password": "packer",
+        "ssh_username": "packer",
+        "update": "true",
+		"shutdown_command": "echo 'packer' |sudo -S /sbin/halt -h -p",
+        "version": "0.1",
+        "vm_name": "CentOS",
+		"boot_wait": "5s"
+    },
+	"builders": [
+	  {
+		"type": "vmware-iso",
+		"headless": "{{user `headless`}}",
+		"http_directory": "http",
+		"vm_name": "{{user `vm_name`}}",
+		"name": "{{user `vm_name`}}",
+		"ssh_username": "{{user `ssh_username`}}",
+		"ssh_password": "{{user `ssh_password`}}",
+		"ssh_port": 22,
+		"iso_url": "{{user `iso_url`}}",
+		"iso_checksum": "{{user `iso_checksum`}}",
+		"shutdown_command": "{{user `shutdown_command`}}",
+		"guest_os_type": "centos-64",
+		"disk_size": 100000,
+		"vmdk_name": "{{user `vm_name`}}",
+		"vmx_data": {
+		  "numvcpus": "{{user `cpus`}}",
+		  "memsize": "{{user `memory`}}",
+		  "virtualHW.version": "14"
+		},
+		"boot_wait": "{{user `boot_wait`}}",
+		"boot_command": [
+			"<esc><wait>",
+			"linux ks=http://{{ .HTTPIP }}:8000/ks.cfg<enter>"
+		]
+	  }
+	],
+	  "provisioners": [
+		{
+		  "type": "shell",
+		  "inline": [
+			"echo [{{ user `ansible_group` }}] > /tmp/hosts; echo $(hostname -I) >> /tmp/hosts"
+		  ]
+		},
+		{
+		  "type": "file",
+		  "direction": "download",
+		  "source": "/tmp/hosts",
+		  "destination": "ansible/hosts-{{ user `ansible_group` }}"
+		},
+		{
+		  "type": "shell",
+		  "execute_command": "echo 'packer' | {{.Vars}} sudo -S -E bash '{{.Path}}'",
+		  "scripts": "scripts/update.sh"
+		},
+		{
+		  "type": "shell",
+		  "execute_command": "echo 'packer' | {{.Vars}} sudo -S -E bash '{{.Path}}'",
+		  "scripts": "scripts/remove_machineid.sh"
+		}
+	  ]
+}

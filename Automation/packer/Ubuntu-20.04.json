@@ -1,0 +1,75 @@
+{
+	"variables": {
+        "ansible_group": "ubuntu",
+		"cpus": "4",
+        "disable_ipv6": "true",
+        "disk_size": "100000",
+        "headless": "true",
+        "hostname": "ubuntu2004",
+        "iso_checksum": "md5:f3a306f40e4a313fb5a584d73b3dee8f",
+        "iso_name": "ubuntu-20.04.1-live-server-amd64.iso",
+        "iso_path": "iso",
+        "iso_url": "ubuntu-20.04.1-live-server-amd64.iso",
+        "memory": "4096",
+        "no_proxy": "{{env `no_proxy`}}",
+        "preseed": "preseed.cfg",
+        "ssh_fullname": "automation",
+        "ssh_password": "Welcome1",
+        "ssh_username": "automation",
+        "update": "true",
+		"shutdown_command": "echo 'Welcome1' | sudo -S -E shutdown -h now",
+        "version": "16",
+        "vm_name": "ubuntu2004",
+		"boot_wait": "5s"
+    },
+	"builders": [
+	  {
+		"type": "vmware-iso",
+		"headless": "{{user `headless`}}",
+		"vm_name": "{{user `vm_name`}}",
+		"name": "ubuntu2004",
+		
+		"communicator": "ssh",
+		"ssh_username": "{{user `ssh_username`}}",
+		"ssh_password": "{{user `ssh_password`}}",
+		"ssh_port": 22,
+		"ssh_pty": true,
+		"ssh_timeout": "2h",
+		"ssh_handshake_attempts": "20",
+		
+		"iso_url": "{{user `iso_url`}}",
+		"iso_checksum": "{{user `iso_checksum`}}",
+		
+		"shutdown_timeout": "2h",
+		"shutdown_command": "{{user `shutdown_command`}}",
+		
+		"guest_os_type": "ubuntu64guest",
+		"version": 16,
+		"disk_size": "{{user `disk_size`}}",
+		"vmdk_name": "ubuntu2004",
+		"vmx_data": {
+		  "numvcpus": "{{user `cpus`}}",
+		  "memsize": "{{user `memory`}}"
+		},
+		"http_directory": "http",
+		"boot_wait": "{{user `boot_wait`}}",
+		"boot_command": [
+		"<enter><enter><f6><esc><wait> ",
+        "autoinstall net.ifnames=0 biosdevname=0 ip=dhcp ds=nocloud-net;s=http://192.168.6.112:8000/",
+        "<enter>"
+		]
+	  }
+	],
+	  "provisioners": [
+		{
+		  "type": "shell",
+		  "execute_command": "echo 'Welcome1' | {{.Vars}} sudo -S -E bash '{{.Path}}'",
+		  "scripts": "scripts/update.sh"
+		},
+		{
+		  "type": "shell",
+		  "execute_command": "echo 'Welcome1' | {{.Vars}} sudo -S -E bash '{{.Path}}'",
+		  "scripts": "scripts/remove_machineid.sh"
+		}
+	  ]
+}

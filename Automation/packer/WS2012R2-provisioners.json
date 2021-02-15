@@ -1,0 +1,54 @@
+{
+	"builders": [
+	  {
+		"type": "vmware-iso",
+		"name": "WS2012R2",
+		"communicator": "winrm",
+		"winrm_username": "Automation",
+		"winrm_password": "Welcome1",
+		"winrm_timeout": "4h",
+		"winrm_use_ssl": true,
+		"winrm_insecure": true,
+		"disable_vnc": true,
+		"iso_url": "E:/OS/en_windows_server_2012_r2_with_update_x64_dvd_6052708.iso",
+		"iso_checksum": "md5:78BFF6565F178ED08AB534397FE44845",
+		"boot_wait": "2m",
+		"shutdown_command": "shutdown /s /t 10 /f /d p:4:1 /c \"Packer Shutdown\"",
+		"vm_name": "WS2012R2",
+		"guest_os_type": "windows8srv-64",
+		"version": 16,
+		"disk_size": 61440,
+		"vmdk_name": "WS2012R2",
+		"vmx_data": {
+		  "numvcpus": 4,
+		  "memsize": 4096,
+		  "scsi0.virtualDev": "lsisas1068"
+		},
+		"floppy_files": [
+			"./WS2012R2/Autounattend.xml",
+			"./scripts/ConfigureRemotingForAnsible.ps1",
+			"./scripts/Set-NetworkPrivate.ps1"
+		]
+	  }
+	],
+	"provisioners": [
+		{
+			"type": "file",
+			"source": "./scripts/ip.cmd",
+			"destination": "C:/ip.cmd"
+		},
+		{
+			"type": "windows-shell",
+			"inline": [
+				"echo [{{ user `ansible_group` }}] > C:/hosts",
+				"C:/ip.cmd"
+			]
+		},
+		{
+			"type": "file",
+			"direction": "download",
+			"source": "C:/hosts",
+			"destination": "./ansible/hosts-{{ user `ansible_group` }}"
+		}
+	]
+}

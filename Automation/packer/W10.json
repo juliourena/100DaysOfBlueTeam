@@ -1,0 +1,34 @@
+{
+	"builders": [
+	  {
+		"type": "vmware-iso",
+		"name": "WIN10",
+		"communicator": "winrm",
+		"winrm_username": "Administrator",
+		"winrm_password": "Welcome1",
+		"winrm_timeout": "4h",
+		"winrm_use_ssl": true,
+		"winrm_insecure": true,
+		"disable_vnc": true,
+		"iso_url": "en_windows_10_business_editions_version_2004_updated_sep_2020_x64_dvd_d015d77b.iso",
+		"iso_checksum": "md5:5393E0C1EBA384ECC5FEA3A313653378",
+		"boot_wait": "2m",
+		"shutdown_command": "shutdown /s /t 10 /f /d p:4:1 /c \"Packer Shutdown\"",
+		"vm_name": "WIN10",
+		"guest_os_type": "windows8srv-64",
+		"version": 16,
+		"disk_size": 61440,
+		"vmdk_name": "WIN10",
+		"vmx_data": {
+		  "numvcpus": 2,
+		  "memsize": 4096,
+		  "scsi0.virtualDev": "lsisas1068"
+		},
+		"floppy_files": [
+			"C:/tools/Automation/Autounattend.xml",
+			"C:/tools/Automation/scripts/ConfigureRemotingForAnsible.ps1",
+			"C:/tools/Automation/scripts/Set-NetworkPrivate.ps1"
+		]
+	  }
+	]
+}
