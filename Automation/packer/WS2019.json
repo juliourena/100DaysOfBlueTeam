@@ -1,0 +1,34 @@
+{
+	"builders": [
+	  {
+		"type": "vmware-iso",
+		"name": "WS2019",
+		"communicator": "winrm",
+		"winrm_username": "Administrator",
+		"winrm_password": "Welcome1",
+		"winrm_timeout": "4h",
+		"winrm_use_ssl": true,
+		"winrm_insecure": true,
+		"disable_vnc": true,
+		"iso_url": "en_windows_server_2019_updated_oct_2020_x64_dvd_7484fc77.iso",
+		"iso_checksum": "md5:0061c5f6b9b0b2fc468b9701dad9cbbf",
+		"boot_wait": "2m",
+		"shutdown_command": "shutdown /s /t 10 /f /d p:4:1 /c \"Packer Shutdown\"",
+		"vm_name": "WS2019",
+		"guest_os_type": "windows8srv-64",
+		"version": 16,
+		"disk_size": 61440,
+		"vmdk_name": "WS2019",
+		"vmx_data": {
+		  "numvcpus": 4,
+		  "memsize": 4096,
+		  "scsi0.virtualDev": "lsisas1068"
+		},
+		"floppy_files": [
+			"C:/tools/Automation/WS2019/Autounattend.xml",
+			"C:/tools/Automation/scripts/ConfigureRemotingForAnsible.ps1",
+			"C:/tools/Automation/scripts/Set-NetworkPrivate.ps1"
+		]
+	  }
+	]
+}
