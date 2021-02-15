@@ -20,11 +20,7 @@ Things I learned during the journey:
 -	Network Event Collection 
 - Threat Hunting
 -	Vulnerability Management 
--	IDS / IPS
 - Threat Intelligence 
-
-Other things of interest: 
--	Honeypots 
 
 ## Lab Building & Automation
 If you are planning to learn something you need to do it, you need to see it working and failing, understanding the theory is necessary, but you also need to practice. I spent a lot of days learning automation and it was one of the things I love the most from this journey. 
@@ -66,17 +62,68 @@ There may be other things you want to do, but those are the topics I covered dur
 ### Use Case 
 You need to hunt for threats within your enviroment or use data for forencis analysis. Windows Events allow you to track actions and changes within a Windows endpoint. You can also use research from other blueteamers if you have the correct logs available on your systems.
 
+### Things to Learn
+- Windows Events
+- Sysmon
+
 ## Host & Network Monitoring
-There are many tools you can use to monitor your workstations and network. I started the journey understanding how the ELK Stack (Elasticsearch, Logstash & Kibana) works, most of the tools out there use this stack and it makes sense to have an idea what it do behind the scene. 
+Before we can do threat hunting we need to collect information from different sources and centralize that information in one place. There are many tools you can use to monitor your workstations and network. I started the journey understanding how the ELK Stack (Elasticsearch, Logstash & Kibana) works, most of the tools out there use this stack and it makes sense to have an idea what it do behind the scene. 
 
 ### Use Case
 You need to centralize your events and logs collection, you need your endpoints, servers, applications, switches and firewall to send their logs and events to one location. With all this information you can start building detections and identifying threats within your enviroment. 
 
+There's an incident on your enviroment and there are some host that you suspect are compromised, you need to query the host on realtime to identify running threats, you can use OSQuery to do that. 
+
 ### Things To Learn
 I'll mention some tools for you to try them and choose the one that you like the most or the conbination of some of them.
 
-- ELK Stack 
+#### Events & Logs Collection
+- Winlogbeats
+- Filebeats
+- Syslogs
+
+#### Network monitoring / IDS
+- Zeek 
+- Snort
+- Suricata IDS
+
+#### Centralize Management
+- ELK Stack (ElasticSearch, Kibana, Logstash)
 - Wazuh
 - THE HELK
 - Security Onion
 
+### OS Realtime query
+Query your devices like a database.
+- Osquery
+- Kolide
+- Fleet
+
+## Threat Hunting
+Once with all data being collected in one location we can start doing our threat hunting. There are many methods we can use but we'll focus on some methods being develop by the BlueTeam Community. Will focus on Snort for network traffic, YARA for files and Sigma for logs. Those project aims to have generic rules which can be shared and run against different targets.
+
+### Use Case 
+A new threat came and you want to understand if you are vulernable or compromise, the community release a new sigma rule to detect that threat and you run it again your collected data. 
+
+### Things to Learn
+- YARA
+- Sigma
+- Snort
+- LogonTracer
+- PlumHound
+- ivre
+
+## Vulnerability Management
+
+### Use Case
+
+### Things to Learn
+- Wazuh
+
+## Threat Intelligence
+
+### Use Case
+
+### Things to Learn
+- MIPS
+- OpenCTI
